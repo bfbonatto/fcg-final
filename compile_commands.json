@@ -1,0 +1,97 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++11",
+      "-Wall",
+      "-Wno-unused-function",
+      "-g",
+      "-I",
+      "./include/",
+      "./lib-linux/libglfw3.a",
+      "-o",
+      "./bin/Linux/main",
+      "src/main.cpp"
+    ],
+    "directory": "/home/bfbonatto/Documents/fcg-final",
+    "file": "/home/bfbonatto/Documents/fcg-final/src/main.cpp",
+    "output": "/home/bfbonatto/Documents/fcg-final/./bin/Linux/main"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++11",
+      "-Wall",
+      "-Wno-unused-function",
+      "-g",
+      "-I",
+      "./include/",
+      "./lib-linux/libglfw3.a",
+      "-o",
+      "./bin/Linux/main",
+      "src/glad.c"
+    ],
+    "directory": "/home/bfbonatto/Documents/fcg-final",
+    "file": "/home/bfbonatto/Documents/fcg-final/src/glad.c",
+    "output": "/home/bfbonatto/Documents/fcg-final/./bin/Linux/main"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++11",
+      "-Wall",
+      "-Wno-unused-function",
+      "-g",
+      "-I",
+      "./include/",
+      "./lib-linux/libglfw3.a",
+      "-o",
+      "./bin/Linux/main",
+      "src/textrendering.cpp"
+    ],
+    "directory": "/home/bfbonatto/Documents/fcg-final",
+    "file": "/home/bfbonatto/Documents/fcg-final/src/textrendering.cpp",
+    "output": "/home/bfbonatto/Documents/fcg-final/./bin/Linux/main"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++11",
+      "-Wall",
+      "-Wno-unused-function",
+      "-g",
+      "-I",
+      "./include/",
+      "./lib-linux/libglfw3.a",
+      "-o",
+      "./bin/Linux/main",
+      "src/tiny_obj_loader.cpp"
+    ],
+    "directory": "/home/bfbonatto/Documents/fcg-final",
+    "file": "/home/bfbonatto/Documents/fcg-final/src/tiny_obj_loader.cpp",
+    "output": "/home/bfbonatto/Documents/fcg-final/./bin/Linux/main"
+  },
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++11",
+      "-Wall",
+      "-Wno-unused-function",
+      "-g",
+      "-I",
+      "./include/",
+      "./lib-linux/libglfw3.a",
+      "-o",
+      "./bin/Linux/main",
+      "src/stb_image.cpp"
+    ],
+    "directory": "/home/bfbonatto/Documents/fcg-final",
+    "file": "/home/bfbonatto/Documents/fcg-final/src/stb_image.cpp",
+    "output": "/home/bfbonatto/Documents/fcg-final/./bin/Linux/main"
+  }
+]
