@@ -24,6 +24,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <set>
 #include <sstream>
 #include <stack>
 #include <stdexcept>
@@ -49,6 +50,7 @@
 // Headers locais, definidos na pasta "include/"
 #include "matrices.h"
 #include "utils.h"
+#include "collisions.h"
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -163,6 +165,7 @@ struct SceneObject {
 struct Boid {
   int boid_id;
   int flock_id;
+  bool predator;
 
   glm::vec3 position;
   glm::vec3 direction;
@@ -334,9 +337,9 @@ int main(int argc, char *argv[]) {
   ComputeNormals(&planemodel);
   BuildTrianglesAndAddToVirtualScene(&planemodel);
 
-  // ObjModel cowmodel("../../data/cow.obj");
-  // ComputeNormals(&cowmodel);
-  // BuildTrianglesAndAddToVirtualScene(&cowmodel);
+  ObjModel cowmodel("../../data/cow.obj");
+  ComputeNormals(&cowmodel);
+  BuildTrianglesAndAddToVirtualScene(&cowmodel);
 
   // ObjModel conemodel("../../data/cone.obj");
   // ComputeNormals(&conemodel);
@@ -367,14 +370,14 @@ int main(int argc, char *argv[]) {
   glm::mat4 the_view;
 
   g_boids = {};
-  // struct Boid b1 = {1, 1, glm::vec3(1.0f, 0.0f, 0.0f),
-  //                   glm::vec3(0.0f, 1.0f, 0.0f)};
-  // g_boids.push_back(b1);
   for (int i = 1; i < 13; i++) {
-    struct Boid b = {i, 1 + (i % 3), glm::vec3(r01(), r01(), r01()),
+    struct Boid b = {i, 1 + (i % 3), false, glm::vec3(r01(), r01(), r01()),
                      glm::vec3(r01(), r01(), r01())};
     g_boids.push_back(b);
   }
+  struct Boid pred1 = {0, 0, true, glm::vec3(r01(), r01(), r01()),
+                     glm::vec3(r01(), r01(), r01())};
+  g_boids.push_back(pred1);
   // struct Boid b1 = {1, 5, glm::vec3(1.0f, 0.0f, 0.0f),
   //                   glm::vec3(0.0f, 0.0f, 0.0f)};
   // struct Boid b2 = {2, 4, glm::vec3(0.0f, 1.0f, 0.0f),
@@ -483,8 +486,8 @@ int main(int argc, char *argv[]) {
 // #define SPHERE 0
 // #define BUNNY 1
 #define PLANE 0
-// #define COW 3
-#define CONE 1
+#define COW   2
+#define CONE  1
 
     // Desenhamos o modelo da esfera
     /*model = Matrix_Translate(-1.0f,0.0f,0.0f)
@@ -503,21 +506,20 @@ int main(int argc, char *argv[]) {
     DrawVirtualObject("bunny");*/
 
     // Desenhamos o plano do chão
-    // model =
-    //     Matrix_Translate(0.0f, -1.1f, 0.0f) * Matrix_Scale(3.0f, 1.0f, 3.0f);
-    // glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-    // glUniform1i(object_type_uniform, PLANE);
-    // DrawVirtualObject("plane");
+    model =
+        Matrix_Translate(0.0f, -1.1f, 0.0f) * Matrix_Scale(3.0f, 1.0f, 3.0f);
+    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+    glUniform1i(object_type_uniform, PLANE);
+    DrawVirtualObject("plane");
 
-    // model = Matrix_Translate(1.0f, 0.0f, 0.0f) *
-    //         Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
-    // glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-    // glUniform1i(object_id_uniform, COW);
-    // DrawVirtualObject("cow");
+    model = Matrix_Translate(1.0f, -0.5f, 0.0f);
+    glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+    glUniform1i(object_type_uniform, COW);
+    DrawVirtualObject("cow");
 
-    bool flocking = true;
-    float min_dist = 0.01f;
+    float min_dist = 1.0f;
     float speed = 0.01f;
+    float pred_speed = 0.02f;
 
     std::map<int, glm::vec3> pos_per_flock;
     glm::vec3 total_pos = glm::vec3(0, 0, 0);
@@ -525,6 +527,7 @@ int main(int argc, char *argv[]) {
     glm::vec3 total_spd = glm::vec3(0, 0, 0);
     std::map<int, float> flock_size;
     for (auto b : g_boids) {
+      if (b.predator) {continue;}
       if (!pos_per_flock.count(b.flock_id)) {
         pos_per_flock[b.flock_id] = b.position;
         flock_size[b.flock_id] = 0;
@@ -538,20 +541,105 @@ int main(int argc, char *argv[]) {
       }
       flock_size[b.flock_id] += 1;
     }
+    std::set<int> boids_to_remove = {};
+
+    glm::vec3 cow_bbox_min_base = g_VirtualScene["cow"].bbox_min;
+    glm::vec3 cow_bbox_max_base = g_VirtualScene["cow"].bbox_max;
+    auto cow_bbox_min_t =  Matrix_Translate(1.0f, -0.5f, 0.0f) * glm::vec4(cow_bbox_min_base.x, cow_bbox_min_base.y, cow_bbox_min_base.z,1.0f);
+    auto cow_bbox_max_t =  Matrix_Translate(1.0f, -0.5f, 0.0f) * glm::vec4(cow_bbox_max_base.x, cow_bbox_max_base.y, cow_bbox_max_base.z,1.0f);
+    glm::vec3 cow_bbox_min = glm::vec3(cow_bbox_min_t[0],cow_bbox_min_t[1],cow_bbox_min_t[2]);
+    glm::vec3 cow_bbox_max = glm::vec3(cow_bbox_max_t[0],cow_bbox_max_t[1],cow_bbox_max_t[2]);
+
+
 
     for (auto &b : g_boids) {
       // printf("boid %d of flock %d\n", b.boid_id, b.flock_id);
       // printf("  should be at %f %f %f\n", b.position.x, b.position.y,
       //        b.position.z);
+      bool stuck = false;
+      if (boid_ground(b.position, 0.05f, -1.0f)) {
+        stuck = true && !b.predator;
+      }
+      else if (!b.predator) {
+          glm::vec3 avg_pos = pos_per_flock[b.flock_id] / flock_size[b.flock_id];
+          glm::vec3 avg_spd = spd_per_flock[b.flock_id] / flock_size[b.flock_id];
+          b.direction += (avg_pos - b.position) * 0.01f;
+          b.direction += (b.direction - avg_spd) * 0.01f;
+          for (auto other : g_boids) {
+            if (other.boid_id != b.boid_id) {
+                glm::vec3 d = other.position - b.position;
+                //printf("Testing %d with %d: ", b.boid_id, other.boid_id);
+                if (boid_boid(b.position, 0.05f, other.position, 0.05f)) {
+                    //printf("Collision with %d %d\n", b.boid_id, other.boid_id);
+                    if (other.predator) {
+                        boids_to_remove.insert(b.boid_id);
+                    }
+                    else {
+                        b.direction = -d;
 
-      b.position += b.direction;
+                    }
+                }
+                else if (boid_cow(cow_bbox_min, cow_bbox_max, b.position, 0.05f)) {
+                    b.direction = -d*speed;
+                }
+                else {
+                    if (other.predator) {
+                        b.direction -= normalize(d)/500.0f;
+                    }
+                    else if (d.length() <= min_dist) {
+                        b.direction -= 2.0f*d;
+                    }
+                }
+            }
+          }
+      }
+      else {
+        float least_distance = 100.0f;
+        glm::vec3 target;
+        for (auto [f,p] : pos_per_flock) {
+            glm::vec3 d = p - b.position;
+            if (d.length() <= least_distance) {
+                least_distance = d.length();
+                target = d;
+            }
+        }
+        b.direction += target;
+        if (boid_cow(cow_bbox_min, cow_bbox_max, b.position, 0.05f)) {
+            b.direction = glm::vec3(r01(), r01(), r01())*pred_speed;
+        }
+      }
+
+      if (b.position.x > 1) { b.direction.x = -speed; }
+      if (b.position.y > 1) { b.direction.y = -speed; }
+      if (b.position.z > 1) { b.direction.z = -speed; }
+      if (b.position.x < -1) { b.direction.x = speed; }
+      if (b.position.y < -1) { b.direction.y = speed; }
+      if (b.position.z < -1) { b.direction.z = speed; }
+      if (b.direction.length() > speed && !b.predator) {
+        b.direction = normalize(b.direction)*speed;
+      }
+      if (b.direction.length() > pred_speed && b.predator) {
+        b.direction = normalize(b.direction)*pred_speed;
+      }
+      if (!stuck) {b.position += b.direction;}
 
       model = Matrix_Translate(b.position.x, b.position.y, b.position.z) *
-              Matrix_Scale(0.05f, 0.05f, 0.05f);
+              Matrix_Scale(0.05f, 0.05f, 0.05f); // R = 0.1f
       glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
       glUniform1i(object_id_uniform, b.flock_id);
       glad_glUniform1i(object_type_uniform, CONE);
       DrawVirtualObject("sphere");
+    }
+
+    std::vector<struct Boid> new_boids = {};
+    for (auto b : g_boids) {
+        if (!boids_to_remove.count(b.boid_id)) {
+            new_boids.push_back(b);
+        }
+    }
+    g_boids.clear();
+    if (flock_size.size() != 0) {
+        g_boids = new_boids;
     }
 
     // model = Matrix_Translate(1.0f, 0.0f, 0.0f) * Matrix_Scale(0.1f, 0.1f,

@@ -22,7 +22,7 @@ uniform mat4 projection;
 // #define SPHERE 0
 // #define BUNNY  1
 #define PLANE  0
-// #define COW    3
+#define COW    2
 #define CONE   1
 uniform int object_id;
 uniform int object_type;
@@ -157,8 +157,10 @@ void main()
     float lambert = max(0,dot(n,l));
     vec3 Kd0;
     if (object_type == CONE) {
-
-        if (object_id == 1) {
+        if (object_id == 0) {
+            Kd0 = vec3(0.1);
+        }
+        else if (object_id == 1) {
             Kd0 = vec3(1,0,0);
         }
         else if (object_id == 2) {
@@ -168,13 +170,16 @@ void main()
             Kd0 = vec3(0,1,0);
         }
         else {
-            Kd0 = vec3(sin(object_id), cos(object_id), tan(object_id));
+            Kd0 = vec3(sin(object_id));
         }
 
     }
     else if (object_type == PLANE) {
         vec2 pos = vec2(p.x,p.z)*60;
         Kd0 = vec3(noise(pos)*0.2,noise(pos)+0.1,0);
+    }
+    else if (object_type == COW) {
+        Kd0 = vec3(0.6,0.2,0.3);
     }
     color = (Kd0) * (lambert + 0.01);
 
